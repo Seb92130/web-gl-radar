@@ -1,0 +1,8 @@
+**/Debug/*
+**/Release/*
+RadarTrackGenerator/ipch/*
+**/*.sdf
+**/*.vcxproj.filters
+**/node_modules/*
+**/*.VC.opendb
+

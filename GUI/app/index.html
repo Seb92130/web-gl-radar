@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+	<head>	
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	</head>
+	<body>
+		<div class="container"> 
+			<canvas width="600" height="600" id="my_Canvas"> </canvas>
+			<canvas width="600" height="600" id="text" style="position:absolute;left:0px;right:0px;z-index:10"> </canvas>
+			<div style="display:flex;justify-content:center;width:600px">
+				<button style="margin-right:10px" type="button" class="btn btn-primary btn-md" onclick="push()">+</button>
+				<button type="button" class="btn btn-primary btn-md" onclick="pop()">-</button>
+			</div>
+		</div>
+		<script id="fragment-shader" type="x-shader/x-fragment">
+			precision highp float; 
+			uniform vec4 u_Color; 
+			uniform bool u_Makegradien; 
+			uniform bool u_MakeCentergradien;
+			uniform vec2 u_CenterPoint;
+			uniform bool u_hasColorVector;
+			uniform float u_canvasHeight;
+			uniform float u_canvasWidth;
+			uniform float u_radius;
+			varying lowp vec4 vColor;
+			varying lowp vec2 vScalingFactor;
+			varying lowp vec2 vTranslation;
+			void main (void) { 
+				if ( u_Makegradien 
+					 || u_MakeCentergradien ){ 
+					 
+					vec2 st = vec2(gl_FragCoord.x / (u_canvasWidth / 2.0) - 1.0, gl_FragCoord.y / ( u_canvasHeight / 2.0 ) - 1.0);
+					vec2 refPoint = u_MakeCentergradien ? ( u_CenterPoint * vScalingFactor + vTranslation ): vec2(0.0, 0.0);
+					
+					float mixValue = distance (st, refPoint);
+					if( u_MakeCentergradien ){
+						mixValue = mixValue / ( u_radius * vScalingFactor.x );
+					}
+					
+					vec3 color = mix(vec3(0.9,0.9,0.9) , vec3(u_Color.r, u_Color.g, u_Color.b), mixValue);
+					gl_FragColor = vec4 (color, 1.0) ;
+				}
+				else if( u_hasColorVector ){
+					gl_FragColor = vColor;
+				}
+				else{
+					gl_FragColor = u_Color;
+				}
+			}
+		</script>
+		<script id="vertex-shader" type="x-shader/x-fragment">
+			precision mediump float; 
+			attribute vec2 coordinates;
+			uniform vec2 uScalingFactor; 
+			uniform vec2 uTranslation; 
+			attribute vec4 aVertexColor; 
+			varying lowp vec4 vColor;
+			varying lowp vec2 vScalingFactor;
+			varying lowp vec2 vTranslation;
+			
+			void main (void) {
+				gl_Position = vec4(uScalingFactor * coordinates, 0.0, 1.0) + vec4(uTranslation, 0.0, 0.0);
+				vColor = aVertexColor;
+				vScalingFactor = uScalingFactor;
+				vTranslation = uTranslation;
+			}
+		</script>
+		<script src="./js/radar.js"></script>
+	</body>
+</html>			
+
+				
