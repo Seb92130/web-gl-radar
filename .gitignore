@@ -5,4 +5,4 @@ RadarTrackGenerator/ipch/*
 **/*.vcxproj.filters
 **/node_modules/*
 **/*.VC.opendb
-
+GUI/Package/*

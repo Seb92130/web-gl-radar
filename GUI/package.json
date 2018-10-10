@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron .",
-    "package": "electron-packager ./ MyFirstApp --all --out ~/Desktop/MyFirstApp --version 0.30.2 --overwrite --icon=./app/img/app-icon.icns"
+    "package": "electron-packager ./ RadarGUI --out ./Package/RadarGUI --platform=win32 --arch=x64 --version=1.4.13"
   },
   "devDependencies": {
     "electron-packager": "^5.0.1",
