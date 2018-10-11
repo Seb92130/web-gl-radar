@@ -8,7 +8,7 @@ const dgram = require('dgram');
 let win = null;
 
 function createWindow() { 
-   win = new BrowserWindow({width: 600, height: 600}) 
+   win = new BrowserWindow({width: 680, height: 670}) 
    
    win.loadURL(url.format ({ 
       pathname: path.join(__dirname, './app/index.html'), 

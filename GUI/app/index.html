@@ -4,12 +4,16 @@
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 	</head>
 	<body>
-		<div class="container"> 
+		<div style="width:650px">
 			<canvas width="600" height="600" id="my_Canvas"> </canvas>
 			<canvas width="600" height="600" id="text" style="position:absolute;left:0px;right:0px;z-index:10"> </canvas>
-			<div style="display:flex;justify-content:center;width:600px">
-				<button style="margin-right:10px" type="button" class="btn btn-primary btn-md" onclick="push()">+</button>
-				<button type="button" class="btn btn-primary btn-md" onclick="pop()">-</button>
+			<div style="float:right">
+				<div>
+					<button style="margin-bottom:10px; width:35px" type="button" class="btn btn-primary btn-md" onclick="push()">+</button>
+				</div>
+				<div>
+					<button style="width:35px" type="button" class="btn btn-primary btn-md" onclick="pop()">-</button>
+				</div>
 			</div>
 		</div>
 		<script id="fragment-shader" type="x-shader/x-fragment">

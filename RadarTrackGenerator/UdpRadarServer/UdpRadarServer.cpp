@@ -65,7 +65,7 @@ int main()
 	std::uniform_real_distribution<double> unifTargetList(0, 350);
 	std::uniform_real_distribution<double> unifTargetAngle(0, 360);
 	std::uniform_real_distribution<double> unifRand(0, 100);
-	std::uniform_real_distribution<double> unifTargetDelta(0, 20);
+	std::uniform_real_distribution<double> unifTargetDelta(0, 2);
 
 	std::vector<TargetData> targetList;
 	for (uint32_t i = 0; i < 25; ++i) {
