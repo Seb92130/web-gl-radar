@@ -7,8 +7,15 @@ var canvas = document.getElementById ( "my_Canvas" );
 var textCanvas = document.getElementById( "text" );
 var ctxTextCanvas = textCanvas.getContext( "2d" );
 var gl = canvas.getContext('experimental-webgl');
+var bangImage = document.getElementById ( "bang" );
 
+const targetShape = [0.0, 0.0, 0.02, 0.02, -0.02, 0.02, 0.0, 0.0];
 const targetRadius = 0.02;
+const targetBallRadius = 0.04;
+const BALL_STEP = 0.005;
+
+var ballIndex = 0;
+var rotateAngle = 0;
 var drag = false;
 var old_x, old_y;
 var dX = 0, dY = 0;
@@ -46,6 +53,24 @@ var vertices2 = [];
 var Sx = 1.0, Sy = 1.0;
 
 var targetList = [];
+
+var targetBalls = [];
+
+for( var indexBalls = 0 ; indexBalls < 50 ; ++indexBalls ){
+	let targetBallRadius = 0.9 * Math.random();
+	let targetAngle = Math.floor( 360 * Math.random());
+	targetBalls.push({
+		targetHit : 0.0,
+		targetX : targetBallRadius * Math.cos( targetAngle * ( Math.PI/180 )),
+		targetY : targetBallRadius * Math.sin( targetAngle * ( Math.PI/180 )),
+		xStep : BALL_STEP * ( Math.floor( Math.random() * 100 ) % 2 ? 1 : -1 ),
+		yStep : BALL_STEP * ( Math.floor( Math.random() * 100 ) % 2 ? 1 : -1 ),
+		index: indexBalls,
+		verticesTargetBall : []
+	});
+}
+
+ballIndex = targetBalls.length;
 
 var changeOrient = false;
 
@@ -107,7 +132,7 @@ gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(targetColorVector), gl.STATIC_DR
 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 var animate = function(time) { 
-	myMethod();	
+	drawScreen();	
     window.requestAnimationFrame(animate);
 }
 
@@ -147,7 +172,7 @@ function main() {
     });        
 }
 
-function myMethod( ) {
+function drawScreen( ) {
 	// Clear the canvas 
 	ctxTextCanvas.clearRect( 0, 0, textCanvas.width, textCanvas.height );
 	gl.clearColor(0.5, 0.5, 0.5, 0.9);
@@ -177,6 +202,8 @@ function myMethod( ) {
 	/*if( currenLAngle > 180 ) changeOrient = true; 
 	if ( currentAngle < 0 ) changeOrient = false;*/ 
 	//if( currentAngle > 360 ) currentAngle = 0;
+
+	drawBall();
 
 	computeTargets ( currentAngle, targetList ) ;
 	
@@ -442,6 +469,134 @@ function drawVertices(
 	gl.bindBuffer( gl.ARRAY_BUFFER, null );
 }	
 
+function drawBall()
+{
+	var ballsToRemove = [];
+	rotateAngle += 5;
+	if( rotateAngle === 360 ) rotateAngle = 0;
+
+	for( var targetBall of targetBalls ){
+		let angle = Math.floor( Math.atan2( targetBall.targetY, targetBall.targetX ) * ( 180/Math.PI ));
+		let boundX = Math.abs( 0.9 * Math.cos( angle * ( Math.PI/180)));
+		let boundY = Math.abs( 0.9 * Math.sin( angle * ( Math.PI/180)));
+
+		if( Math.abs( targetBall.targetX) > boundX 
+			&& Math.abs( targetBall.targetY) > boundY ){
+
+			computeNextDir( targetBall, angle );
+		}
+
+		var hasCollide = false;
+		var nearFromCollide = false;
+		let ballKey = "Ball" + targetBall.index;
+		let distFromCollide = 0;
+
+		if( misc_buffers[ballKey] === undefined ){
+			misc_buffers[ballKey] = gl.createBuffer();
+		}
+
+		if( targetBall.targetHit === 0.0 ){
+			for( var targetBallForCollide of targetBalls ){
+				if( targetBallForCollide.index === targetBall.index 
+					|| targetBallForCollide.targetHit >= 0.005 ){
+
+					continue;
+				}
+				let distanceFromOther = 
+					Math.sqrt( 
+						Math.pow(( targetBall.targetX - targetBallForCollide.targetX ), 2 )
+						+ Math.pow(( targetBall.targetY - targetBallForCollide.targetY ), 2 ));
+
+				if( distanceFromOther <= targetBallRadius ){
+					let angleCollide = Math.floor( Math.atan2( targetBallForCollide.targetY, targetBallForCollide.targetX ) * ( 180/Math.PI ));
+					hasCollide = true;
+					targetBallForCollide.targetHit += 0.001;
+				}
+				if( distanceFromOther <= (targetBallRadius + 0.1 )){
+					nearFromCollide = true;
+					distFromCollide = ( targetBallRadius + 0.1 ) - distanceFromOther;
+				}
+			}
+			if( hasCollide ){
+				targetBall.targetHit += 0.001;
+			}
+			targetBall.verticesTargetBall = [ targetBall.targetX, targetBall.targetY ];
+			if( nearFromCollide === true ){
+				targetBall.xStep += BALL_STEP * ( Math.floor( Math.random() * 100 ) % 2 ? 1 : -1 ) * Math.random();
+				targetBall.yStep += BALL_STEP * ( Math.floor( Math.random() * 100 ) % 2 ? 1 : -1 ) * Math.random();				
+			}
+
+			for( var i = 0 ; i <= 360 ; i+= 45 ){
+				let X = targetBall.targetX + (( [45, 135, 225, 315].indexOf(i) !== -1 ? targetRadius / 2.0 : targetRadius ) + targetBall.targetHit ) * Math.cos(( i + rotateAngle ) * (Math.PI/180));
+				let Y = targetBall.targetY + (( [45, 135, 225, 315].indexOf(i) !== -1 ? targetRadius / 2.0 : targetRadius ) + targetBall.targetHit ) * Math.sin(( i + rotateAngle ) * (Math.PI/180));
+				targetBall.verticesTargetBall.push( X, Y );
+			}
+
+			drawVertices(
+				targetBall.verticesTargetBall
+				, canvas
+				, gl
+				, gl.TRIANGLE_FAN
+				, misc_buffers[ballKey]
+				, shaderProgram
+				, nearFromCollide ? 
+					[0.5 + (( 0.1 - distFromCollide ) / 0.1 ) * 0.5, 0.0, 0.0, 1.0 ]
+					: [
+						0.2 + ( targetBall.index % 2 ) / 2 * 0.6
+						, 0.2 + ( targetBall.index % 3 ) / 3 * 0.6
+						, 0.2 + ( targetBall.index % 5 ) / 5 * 0.6, 0.5
+					]
+				, true /*applyScale*/
+				, false /*makeGradient*/
+				, null /*colorBuffer*/
+				, true /*centerGradient*/
+				, [targetBall.targetX,targetBall.targetY]
+			);
+
+			targetBall.targetX += targetBall.xStep;
+			targetBall.targetY += targetBall.yStep;
+		}
+		else{
+			targetBall.targetHit += 0.001;
+			if( targetBall.targetHit > 0.09 ){
+				targetBall.targetHit = 0.0;
+				ballsToRemove.push(targetBall);
+			}
+
+			var pixelX = ( targetBall.targetX * Sx +dX + 1.0 )* ctxTextCanvas.canvas.width/2.0;
+			var pixelY = ctxTextCanvas.canvas.height - ( targetBall.targetY * Sy + dY + 1.0 ) * ctxTextCanvas.canvas.height/2.0;	
+			var size = ( 50 + 30 * ( 0.09 - ( 0.09 - targetBall.targetHit )) / 0.09 ) * Sx;
+			var factor = ( 25 + 15 * ( 0.09 - ( 0.09 - targetBall.targetHit )) / 0.09 ) * Sx;
+			ctxTextCanvas.drawImage( bangImage, pixelX - factor, pixelY - factor, size, size );		
+		}
+	}
+	for( var ballToRemove of ballsToRemove ){
+		let ballKey = "Ball" + ballToRemove.index;
+		if( misc_buffers[ballKey] !== undefined ){
+			gl.deleteBuffer( misc_buffers[ ballKey ]);
+			delete misc_buffers[ballKey];
+		}
+		targetBalls.splice( targetBalls.indexOf( ballToRemove ), 1 );		
+	}
+}
+
+function computeNextDir( 
+	targetBall
+	, currentAngle
+	, reboundAllAround = false )
+{
+	let randAngle = 0;
+	if( Math.abs( currentAngle - 180 ) < 3 ){
+		randAngle = 30;
+	}
+	else{
+		randAngle = ( reboundAllAround == true ? 360 * Math.random() : ( 120 + 60 * ( currentAngle % 45 ) + 90 * Math.random()) % 360 );
+	}
+
+	targetBall.xStep = BALL_STEP * Math.cos( randAngle * Math.PI / 180 );
+	targetBall.yStep = BALL_STEP * Math.sin( randAngle * Math.PI / 180 );				
+}
+
 function push()
 {
 	Sx += 0.1;
@@ -454,3 +609,17 @@ function pop()
 	Sy -= 0.1;
 }
 
+function addBall()
+{
+	let targetBallRadius = 0.9 * Math.random();
+	let targetAngle = Math.floor( 360 * Math.random());
+	targetBalls.push({
+		targetHit : 0.0,
+		targetX : targetBallRadius * Math.cos( targetAngle * ( Math.PI/180 )),
+		targetY : targetBallRadius * Math.sin( targetAngle * ( Math.PI/180 )),
+		xStep : BALL_STEP * ( Math.floor( Math.random() * 100 ) % 2 ? 1 : -1 ),
+		yStep : BALL_STEP * ( Math.floor( Math.random() * 100 ) % 2 ? 1 : -1 ),
+		index: ballIndex++,
+		verticesTargetBall : []
+	});	
+}
